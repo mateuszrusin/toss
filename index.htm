@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podział zawodników na koszyki i grupy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px 15px;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .koszyk, .grupa {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .header {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Podział zawodników na koszyki i grupy</h1>
+        <form id="koszykiForm">
+            <label for="zawodnicy">Lista zawodników (każdy w nowej linii):</label>
+            <textarea id="zawodnicy" rows="10"></textarea>
+
+            <label for="liczbaGrup">Liczba grup:</label>
+            <input type="number" id="liczbaGrup" min="1" step="1" required>
+
+            <label for="liczbaKoszykow">Liczba koszyków:</label>
+            <input type="number" id="liczbaKoszykow" min="1" step="1" required>
+            
+            <label for="iluWGrupie">Liczba zawodników w grupie:</label>
+            <input type="number" id="iluWGrupie" min="1" step="1" required>
+
+            <button type="button" onclick="podzielNaKoszyki()">Podziel na koszyki i grupy</button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        function losuj(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function podzielNaKoszyki() {
+            const zawodnicyInput = document.getElementById('zawodnicy').value.trim();
+            const liczbaGrup = parseInt(document.getElementById('liczbaGrup').value);
+            const liczbaKoszykow = parseInt(document.getElementById('liczbaKoszykow').value);
+            const iluWGrupie = parseInt(document.getElementById('iluWGrupie').value);
+
+            if (!zawodnicyInput || isNaN(liczbaGrup) || isNaN(liczbaKoszykow) || isNaN(iluWGrupie)) {
+                alert('Proszę wprowadzić poprawne dane.');
+                return;
+            }
+
+            const zawodnicy = zawodnicyInput.split('\n').map(zawodnik => zawodnik.trim()).filter(Boolean);
+            if (zawodnicy.length < liczbaGrup * iluWGrupie) {
+                alert('Liczba zawodników jest zbyt mała w stosunku do liczby grup i liczby zawodników w grupie.');
+                return;
+            }
+
+            const koszyki = Array.from({ length: liczbaKoszykow }, () => []);
+            const zawodnicyNaKoszyk = Math.floor(zawodnicy.length / liczbaKoszykow);
+            let start = 0;
+
+            for (let i = 0; i < liczbaKoszykow; i++) {
+                let koniec = start + zawodnicyNaKoszyk;
+                if (i === liczbaKoszykow - 1) {
+                    koniec = zawodnicy.length; // Dodaj resztę zawodników do ostatniego koszyka
+                }
+                koszyki[i] = zawodnicy.slice(start, koniec);
+                start = koniec;
+            }
+
+            const grupy = Array.from({ length: liczbaGrup }, () => []);
+
+            for (let i = 0; i < liczbaKoszykow - 1; i++) {
+                const koszyk = koszyki[i]; // Używamy oryginalnego koszyka bez losowania
+                const losoweKoszyk = losuj([...koszyk]); // Tworzymy losową kopię koszyka do losowania grup
+                for (let j = 0; j < liczbaGrup; j++) {
+                    grupy[j].push(losoweKoszyk[j]);
+                }
+            }
+
+            const ostatniKoszyk = losuj([...koszyki[liczbaKoszykow - 1]]);
+            let indeks = 0;
+            while (ostatniKoszyk.length > 0) {
+                grupy[indeks].push(ostatniKoszyk.shift());
+                indeks = (indeks + 1) % liczbaGrup;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            const headerKoszyki = document.createElement('div');
+            headerKoszyki.className = 'header';
+            headerKoszyki.innerText = `Podział na ${liczbaKoszykow} koszyków dla ${liczbaGrup} grup:`;
+            resultDiv.appendChild(headerKoszyki);
+
+            koszyki.forEach((koszyk, index) => {
+                const koszykDiv = document.createElement('div');
+                koszykDiv.className = 'koszyk';
+                koszykDiv.innerHTML = `<strong>Koszyk ${index + 1}:</strong> <br>${koszyk.join('<br>')}`;
+                resultDiv.appendChild(koszykDiv);
+            });
+
+            const headerGrupy = document.createElement('div');
+            headerGrupy.className = 'header';
+            headerGrupy.innerText = `Wylosowane ${liczbaGrup} grup po ${iluWGrupie}+ zawodników:`;
+            resultDiv.appendChild(headerGrupy);
+
+            grupy.forEach((grupa, index) => {
+                const grupaDiv = document.createElement('div');
+                grupaDiv.className = 'grupa';
+                grupaDiv.innerHTML = `<strong>Grupa ${String.fromCharCode(65 + index)}:</strong> <br>${grupa.join('<br>')}`;
+                resultDiv.appendChild(grupaDiv);
+            });
+        }
+    </script>
+</body>
+</html>
+
